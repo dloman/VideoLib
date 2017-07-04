@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 
+set(CMAKE_C_COMPILER /usr/local/bin/gcc)
+set(CMAKE_CXX_COMPILER /usr/local/bin/g++)
 set(MODULE_NAME VideoLib)
 add_definitions(-DMODULE_NAME=\"VideoLib\")
 
@@ -16,15 +18,17 @@ find_package(Threads)
 
 find_package(Ffmpeg REQUIRED)
 
-INCLUDE_DIRECTORIES(${FFMPEG_INCLUDE_DIR})
+include_directories(${FFMPEG_INCLUDE_DIR})
 
 find_package(Live555 REQUIRED)
 include_directories(${Live555_INCLUDE_DIRS})
 
 find_package(DanLib REQUIRED HINTS ${DanLib_DIR})
-INCLUDE_DIRECTORIES(${DanLib_INCLUDE_DIR})
+include_directories(${DanLib_INCLUDE_DIR})
+message(" - DanLib is subsessfulling included here ${DanLib_INCLUDE_DIR}")
 
 include_directories(src)
+include_directories(.)
 
 set(CMAKE_DEBUG_POSTFIX d)
 
