@@ -16,18 +16,16 @@ project(VideoLib)
 
 find_package(Threads)
 
-find_package(Ffmpeg REQUIRED)
+find_package(FFmpeg REQUIRED)
 
 include_directories(${FFMPEG_INCLUDE_DIR})
-
-find_package(Live555 REQUIRED)
-include_directories(${Live555_INCLUDE_DIRS})
 
 find_package(DanLib REQUIRED HINTS ${DanLib_DIR})
 include_directories(${DanLib_INCLUDE_DIR})
 message(" - DanLib is subsessfulling included here ${DanLib_INCLUDE_DIR}")
 
-include_directories(src)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 include_directories(.)
 
 set(CMAKE_DEBUG_POSTFIX d)
@@ -83,7 +81,7 @@ target_link_libraries(
   ${FFMPEG_LIBRARIES}
   ${CMAKE_THREAD_LIBS_INIT}
   )
-
+#[[
 add_executable(
   VideoBroadcaster
   src/Main.cpp
@@ -98,3 +96,4 @@ target_link_libraries(
   ${Live555_LIBRARIES}
   ${CMAKE_THREAD_LIBS_INIT}
   )
+#]]
