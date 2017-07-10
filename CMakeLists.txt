@@ -30,70 +30,27 @@ include_directories(.)
 
 set(CMAKE_DEBUG_POSTFIX d)
 
-message("what the fuck why isnt this working your funking fuck${FFMPEG_LIBRARIES}")
-
-#add_library(
-#H264Encoder
-#src/H264Encoder.cpp
-#src/H264Encoder.hpp
-#src/Packet.cpp
-#src/Frame.cpp
-#)
-#
-#target_link_libraries(
-#H264Encoder
-#${FFMPEG_LIBRARIES}
-#)
-#
-#add_executable(
-#H264FileTest
-#src/Test/H264FileTest.cpp
-#)
-#
-#target_link_libraries(
-#H264FileTest
-#H264Encoder
-#${CMAKE_THREAD_LIBS_INIT}
-#)
-#
-#add_library(
-#RtspStreamer
-#src/RtspFramedSource.cpp
-#src/RtspFramedSource.hpp
-#src/RtspServer.cpp
-#src/RtspServer.hpp
-#src/RtspSubsession.cpp
-#src/RtspSubsession.hpp
-#)
-#
-#target_link_libraries(
-#RtspStreamer
-#${Live555_LIBRARIES}
-#)
-
 add_library(
   VideoPlayerLib
+  Utility/Frame.cpp
   VideoPlayer/VideoPlayer.cpp
   )
 
 target_link_libraries(
   VideoPlayerLib
+  Image
   ${FFMPEG_LIBRARIES}
+  ${FFMPEG_SWSSCALE}
   ${CMAKE_THREAD_LIBS_INIT}
   )
-#[[
+
 add_executable(
-  VideoBroadcaster
-  src/Main.cpp
-  src/H264FramedSource.cpp
+  VideoPlayer
+  Test/VideoPlayer.cpp
   )
 
 target_link_libraries(
-  VideoBroadcaster
-  #H264Encoder
-  #RtspStreamer
+  VideoPlayer
+  VideoPlayerLib
   ${FFMPEG_LIBRARIES}
-  ${Live555_LIBRARIES}
-  ${CMAKE_THREAD_LIBS_INIT}
   )
-#]]

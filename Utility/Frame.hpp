@@ -1,6 +1,7 @@
 #pragma once
 
-#include <Images/Image.hpp>
+#include <DanLib/Images/Image.hpp>
+#include <cstddef>
 #include <memory>
 
 namespace vl
@@ -13,7 +14,7 @@ namespace vl
         const double time,
         const int width,
         const int height,
-        std::unique_ptr<uint8_t[]>&& pData);
+        std::unique_ptr<std::byte[]>&& pData);
 
     private:
 

@@ -223,7 +223,7 @@ void VideoPlayer::ConvertFromYuvToRgb(FramePtr& pYuvFrame)
     mpCodecContext->width,
     mpCodecContext->height);
 
-  std::unique_ptr<uint8_t[]> pBytes = std::make_unique<uint8_t[]>(byteCount);
+  std::unique_ptr<std::byte[]> pBytes = std::make_unique<std::byte[]>(byteCount);
 
   FramePtr pRgbFrame(
     av_frame_alloc(),
@@ -231,7 +231,7 @@ void VideoPlayer::ConvertFromYuvToRgb(FramePtr& pYuvFrame)
 
   avpicture_fill(
     reinterpret_cast<AVPicture*>(pRgbFrame.get()),
-    pBytes.get(),
+    reinterpret_cast<std::uint8_t*>(pBytes.get()),
     AV_PIX_FMT_RGB24,
     mpCodecContext->width,
     mpCodecContext->height);
@@ -245,9 +245,10 @@ void VideoPlayer::ConvertFromYuvToRgb(FramePtr& pYuvFrame)
     pRgbFrame->data,
     pRgbFrame->linesize);
 
-  vl::Frame frame(
+  mSignalFrame(vl::Frame(
     av_frame_get_best_effort_timestamp(pYuvFrame.get()) * mTimeBase,
     mpCodecContext->width,
     mpCodecContext->height,
-    std::move(pBytes));
+    std::move(pBytes)));
 }
+

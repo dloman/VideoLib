@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Signal/Signal.hpp>
+#include <DanLib/Signal/Signal.hpp>
 #include <Utility/Frame.hpp>
 
 #include <atomic>
@@ -21,14 +21,14 @@ namespace vl
 
       VideoPlayer(const std::string& filename);
 
-      ~VideoPlayer();
+      ~VideoPlayer() = default;
 
       VideoPlayer(const VideoPlayer&) = delete;
       VideoPlayer& operator = (const VideoPlayer&) = delete;
 
-      using FrameSignal = dl::Signal<vl::Frame>;
+      using FrameSignal = dl::Signal<const vl::Frame&>;
 
-      const FrameSignal GetSignalFrame() const;
+      const FrameSignal& GetSignalFrame() const;
 
     private:
 
@@ -69,4 +69,13 @@ namespace vl
 
       double mTimeBase;
   };
+
+
+  //----------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
+  inline
+  const VideoPlayer::FrameSignal& VideoPlayer::GetSignalFrame() const
+  {
+    return mSignalFrame;
+  }
 }
