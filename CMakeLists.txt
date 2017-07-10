@@ -44,13 +44,22 @@ target_link_libraries(
   ${CMAKE_THREAD_LIBS_INIT}
   )
 
-add_executable(
-  VideoPlayer
-  Test/VideoPlayer.cpp
-  )
+if (ENABLE_TESTS)
 
-target_link_libraries(
-  VideoPlayer
-  VideoPlayerLib
-  ${FFMPEG_LIBRARIES}
-  )
+  find_package(OpenCV REQUIRED)
+
+  include_directories(${OpenCV_INCLUDE_DIR})
+
+  add_executable(
+    VideoPlayer
+    Test/VideoPlayer.cpp
+    )
+
+  target_link_libraries(
+    VideoPlayer
+    VideoPlayerLib
+    ${FFMPEG_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+    )
+
+endif()

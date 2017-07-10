@@ -21,7 +21,7 @@ namespace vl
 
       VideoPlayer(const std::string& filename);
 
-      ~VideoPlayer() = default;
+      ~VideoPlayer();
 
       VideoPlayer(const VideoPlayer&) = delete;
       VideoPlayer& operator = (const VideoPlayer&) = delete;
@@ -29,6 +29,14 @@ namespace vl
       using FrameSignal = dl::Signal<const vl::Frame&>;
 
       const FrameSignal& GetSignalFrame() const;
+
+      using ErrorSignal = dl::Signal<const std::string&>;
+
+      const ErrorSignal& GetSignalError() const;
+
+      using EndSignal = dl::Signal<void>;
+
+      const EndSignal& GetSignalVideoOver() const;
 
     private:
 
@@ -67,6 +75,10 @@ namespace vl
 
       FrameSignal mSignalFrame;
 
+      ErrorSignal mSignalError;
+
+      EndSignal mSignalVideoOver;
+
       double mTimeBase;
   };
 
@@ -77,5 +89,21 @@ namespace vl
   const VideoPlayer::FrameSignal& VideoPlayer::GetSignalFrame() const
   {
     return mSignalFrame;
+  }
+
+  //----------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
+  inline
+  const VideoPlayer::ErrorSignal& VideoPlayer::GetSignalError() const
+  {
+    return mSignalError;
+  }
+
+  //----------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
+  inline
+  const VideoPlayer::EndSignal& VideoPlayer::GetSignalVideoOver() const
+  {
+    return mSignalVideoOver;
   }
 }

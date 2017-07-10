@@ -4,6 +4,7 @@ extern "C"
 {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
+#include <libavutil/error.h>
 #include <libswscale/swscale.h>
 }
 
@@ -18,30 +19,10 @@ namespace
 {
   //----------------------------------------------------------------------------
   //----------------------------------------------------------------------------
-  std::unique_ptr<AVCodecContext, void(*)(AVCodecContext*)> GetCodecContext(
-    const std::experimental::observer_ptr<AVFormatContext> pFormatContext)
-  {
-    for (int i = 0; i < pFormatContext->nb_streams; ++i)
-    {
-      if (pFormatContext->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
-      {
-        return
-        {
-          pFormatContext->streams[i]->codec,
-          [](AVCodecContext* pCodecContext) { avcodec_close(pCodecContext); }
-        };
-      }
-    }
-    throw std::runtime_error("couldn't find video stream");
-  }
-
-  //----------------------------------------------------------------------------
-  //----------------------------------------------------------------------------
   double GetTimeBase(AVStream& stream)
   {
     return av_q2d(stream.time_base);
   }
-
 }
 
 //------------------------------------------------------------------------------
@@ -54,6 +35,18 @@ VideoPlayer::VideoPlayer(const std::string& filename)
     mFilename(filename),
     mTimeBase(0.0)
 {
+}
+
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+VideoPlayer::~VideoPlayer()
+{
+  mIsRunning = false;
+
+  if (mpThread && mpThread->joinable())
+  {
+    mpThread->join();
+  }
 }
 
 //------------------------------------------------------------------------------
@@ -75,7 +68,9 @@ void VideoPlayer::Initialize()
 
   if (avformat_open_input(&pTempFormatContext, mFilename.c_str(), nullptr, nullptr) != 0)
   {
-    throw std::runtime_error("unable to open " + mFilename);
+    mSignalError("unable to open " + mFilename);
+
+    return;
   }
 
   mpFormatContext = std::unique_ptr<AVFormatContext, void(*)(AVFormatContext*)>(
@@ -84,7 +79,9 @@ void VideoPlayer::Initialize()
 
   if (avformat_find_stream_info(mpFormatContext.get(), nullptr) < 0)
   {
-    throw std::runtime_error("unable to find stream info");
+    mSignalError("unable to find stream info");
+
+    return;
   }
 
   OpenCodecContext();
@@ -108,7 +105,9 @@ void VideoPlayer::OpenCodecContext()
 
   if (videoStreamIndex < 0)
   {
-    throw std::runtime_error("could not find best stream");
+    mSignalError("could not find best stream");
+
+    return;
   }
 
   pStream = mpFormatContext->streams[videoStreamIndex];
@@ -119,7 +118,9 @@ void VideoPlayer::OpenCodecContext()
 
   if (!pCodec)
   {
-    throw std::runtime_error("unable to find codec");
+    mSignalError("unable to find codec");
+
+    return;
   }
 
   mpCodecContext = CodecContextPtr(
@@ -128,17 +129,23 @@ void VideoPlayer::OpenCodecContext()
 
   if (!mpCodecContext)
   {
-    throw std::runtime_error("unable to alloc codec context");
+    mSignalError("unable to alloc codec context");
+
+    return;
   }
 
   if (avcodec_parameters_to_context(mpCodecContext.get(), pStream->codecpar) < 0)
   {
-    throw std::runtime_error("unable to copy codec parameters");
+    mSignalError("unable to copy codec parameters");
+
+    return;
   }
 
   if (avcodec_open2(mpCodecContext.get(), pCodec, nullptr) < 0)
   {
-    throw std::runtime_error("unable to open codec");
+    mSignalError("unable to open codec");
+
+    return;
   }
 
   ProcessPackets();
@@ -158,6 +165,10 @@ void VideoPlayer::ProcessPackets()
   {
     DecodePacket(packet);
   }
+
+  mIsRunning = false;
+
+  mSignalVideoOver();
 }
 
 //------------------------------------------------------------------------------
@@ -172,7 +183,9 @@ void VideoPlayer::DecodePacket(const AVPacket& packet)
 
   if (!pYuvFrame)
   {
-    throw std::runtime_error("could not allocate frame");
+    mSignalError("could not allocate frame");
+
+    return;
   }
 
   auto returnCode =
@@ -180,14 +193,16 @@ void VideoPlayer::DecodePacket(const AVPacket& packet)
 
   if (returnCode < 0)
   {
-    throw std::runtime_error("decode error " + std::to_string(returnCode));
+    std::array<char, 2056> error;
+    av_make_error_string(error.data(), 2056, returnCode);
+    mSignalError(std::string("decode error ") + error.data());
   }
 
   if (frameAquired)
   {
     if (packet.dts == AV_NOPTS_VALUE)
     {
-      throw std::runtime_error("invaild time");
+      mSignalError("invaild time");
     }
 
   ConvertFromYuvToRgb(pYuvFrame);
@@ -215,7 +230,7 @@ void VideoPlayer::ConvertFromYuvToRgb(FramePtr& pYuvFrame)
 
   if (!pSws)
   {
-    throw std::runtime_error("unable to get swsContext");
+    mSignalError("unable to get swsContext");
   }
 
   auto byteCount = avpicture_get_size(
