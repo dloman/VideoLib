@@ -3,6 +3,7 @@
 extern "C"
 {
 #include <libavcodec/avcodec.h>
+#include <libavdevice/avdevice.h>
 #include <libavformat/avformat.h>
 #include <libavutil/error.h>
 #include <libswscale/swscale.h>
@@ -62,11 +63,21 @@ void VideoPlayer::Start()
 //------------------------------------------------------------------------------
 void VideoPlayer::Initialize()
 {
-  av_register_all();
+   avdevice_register_all();
+   avcodec_register_all();
+   av_register_all();
+
 
   AVFormatContext* pTempFormatContext = nullptr;
 
-  if (avformat_open_input(&pTempFormatContext, mFilename.c_str(), nullptr, nullptr) != 0)
+  AVInputFormat* pInputFormat = nullptr;
+
+  if (mFilename.find("/dev/video") != std::string::npos)
+  {
+    pInputFormat =av_find_input_format("v4l2");
+  }
+
+  if (avformat_open_input(&pTempFormatContext, mFilename.c_str(), pInputFormat, nullptr) != 0)
   {
     mSignalError("unable to open " + mFilename);
 
