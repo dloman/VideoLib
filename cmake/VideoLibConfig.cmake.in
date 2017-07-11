@@ -1,0 +1,14 @@
+@PACKAGE_INIT@
+
+SET_AND_CHECK(VideoLib_INCLUDE_DIR @PACKAGE_VideoLib_DIRNAME_include@ )
+
+IF(NOT TARGET VideoLib)
+  INCLUDE(${CMAKE_CURRENT_LIST_DIR}/VideoLibExports.cmake)
+ENDIF()
+
+SET(VideoLib_INCLUDE_DIRS ${VideoLib_INCLUDE_DIR} )
+
+SET(
+  VideoLib_LIBRARIES
+  VideoPlayerLib
+  )

@@ -14,6 +14,12 @@ add_definitions(-std=c++1z)
 
 project(VideoLib)
 
+SET(VideoLib_VERSION_MAJOR 0)
+SET(VideoLib_VERSION_MINOR 1)
+
+###############################################################################
+# Dependencies
+###############################################################################
 find_package(Threads)
 
 find_package(FFmpeg REQUIRED)
@@ -32,8 +38,8 @@ set(CMAKE_DEBUG_POSTFIX d)
 
 add_library(
   VideoPlayerLib
-  Utility/Frame.cpp
-  VideoPlayer/VideoPlayer.cpp
+  VideoLib/Utility/Frame.cpp
+  VideoLib/VideoPlayer/VideoPlayer.cpp
   )
 
 target_link_libraries(
@@ -44,6 +50,9 @@ target_link_libraries(
   ${CMAKE_THREAD_LIBS_INIT}
   )
 
+###############################################################################
+# Tests
+###############################################################################
 if (ENABLE_TESTS)
 
   find_package(OpenCV REQUIRED)
@@ -63,3 +72,75 @@ if (ENABLE_TESTS)
     )
 
 endif()
+
+###############################################################################
+# Install
+###############################################################################
+set(VideoLib_VERSION_STRING "${VideoLib_VERSION_MAJOR}.${VideoLib_VERSION_MINOR}")
+set(VideoLib_DIRNAME        "VideoLib-${VideoLib_VERSION_STRING}")
+
+if (MSVC AND CMAKE_CL_64)
+  set(VideoLib_DIRNAME_lib "lib/${VideoLib_DIRNAME}/x64")
+elseif (MSVC)
+  set(VideoLib_DIRNAME_lib "lib/${VideoLib_DIRNAME}/x86")
+else ()
+  set(VideoLib_DIRNAME_lib "lib/${VideoLib_DIRNAME}")
+endif ()
+
+set(VideoLib_DIRNAME_include "include/${VideoLib_DIRNAME}")
+
+include(CMakePackageConfigHelpers)
+
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/VideoLibConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/VideoLibConfig.cmake"
+  INSTALL_DESTINATION
+    ${VideoLib_DIRNAME_lib}
+  PATH_VARS
+    VideoLib_DIRNAME_lib
+    VideoLib_DIRNAME_include
+  )
+
+WRITE_BASIC_PACKAGE_VERSION_FILE(
+  "${CMAKE_CURRENT_BINARY_DIR}/VideoLibConfigVersion.cmake"
+  VERSION ${VideoLib_VERSION_STRING}
+  COMPATIBILITY AnyNewerVersion
+  )
+
+install(
+TARGETS
+VideoPlayerLib
+DESTINATION
+  ${VideoLib_DIRNAME_lib}
+EXPORT
+  VideoLibExports
+  )
+
+install(
+  EXPORT
+    VideoLibExports
+  DESTINATION
+    ${VideoLib_DIRNAME_lib}
+  )
+
+install(
+  FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/VideoLibConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/VideoLibConfigVersion.cmake
+  DESTINATION
+    ${VideoLib_DIRNAME_lib}
+  )
+
+install(
+  FILES
+    VideoLib/VideoPlayer/VideoPlayer.hpp
+  DESTINATION
+    ${VideoLib_DIRNAME_include}/VideoLib/VideoPlayer
+  )
+
+install(
+  FILES
+    VideoLib/Utility/Frame.hpp
+  DESTINATION
+    ${VideoLib_DIRNAME_include}/VideoLib/Utility
+  )

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <DanLib/Signal/Signal.hpp>
-#include <Utility/Frame.hpp>
+#include <VideoLib/Utility/Frame.hpp>
 
 #include <atomic>
 #include <memory>

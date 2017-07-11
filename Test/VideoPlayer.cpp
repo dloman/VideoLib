@@ -1,4 +1,4 @@
-#include "VideoPlayer/VideoPlayer.hpp"
+#include <VideoLib/VideoPlayer/VideoPlayer.hpp>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
