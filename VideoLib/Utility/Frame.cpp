@@ -10,6 +10,6 @@ Frame::Frame(
   const int height,
   std::unique_ptr<std::byte[]>&& pData)
 : mTime(time),
-  mImage(width, height, std::move(pData))
+  mpImage(std::make_shared<dl::image::Image>(width, height, std::move(pData)))
 {
 }

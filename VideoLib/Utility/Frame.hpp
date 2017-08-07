@@ -18,13 +18,13 @@ namespace vl
 
       const double GetTime() const;
 
-      const dl::image::Image& GetImage() const;
+      const std::shared_ptr<const dl::image::Image>& GetImage() const;
 
     private:
 
       double mTime;
 
-      dl::image::Image mImage;
+      std::shared_ptr<const dl::image::Image> mpImage;
   };
 
   //----------------------------------------------------------------------------
@@ -38,8 +38,8 @@ namespace vl
   //----------------------------------------------------------------------------
   //----------------------------------------------------------------------------
   inline
-  const dl::image::Image& Frame::GetImage() const
+  const std::shared_ptr<const dl::image::Image>& Frame::GetImage() const
   {
-    return mImage;
+    return mpImage;
   }
 }

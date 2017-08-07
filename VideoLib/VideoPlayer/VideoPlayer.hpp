@@ -26,7 +26,7 @@ namespace vl
       VideoPlayer(const VideoPlayer&) = delete;
       VideoPlayer& operator = (const VideoPlayer&) = delete;
 
-      using FrameSignal = dl::Signal<const vl::Frame&>;
+      using FrameSignal = dl::Signal<const std::shared_ptr<const vl::Frame>&>;
 
       const FrameSignal& GetSignalFrame() const;
 

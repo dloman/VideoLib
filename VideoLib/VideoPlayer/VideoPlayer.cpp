@@ -63,9 +63,9 @@ void VideoPlayer::Start()
 //------------------------------------------------------------------------------
 void VideoPlayer::Initialize()
 {
-   avdevice_register_all();
-   avcodec_register_all();
-   av_register_all();
+  avdevice_register_all();
+  avcodec_register_all();
+  av_register_all();
 
 
   AVFormatContext* pTempFormatContext = nullptr;
@@ -74,7 +74,7 @@ void VideoPlayer::Initialize()
 
   if (mFilename.find("/dev/video") != std::string::npos)
   {
-    pInputFormat =av_find_input_format("v4l2");
+    pInputFormat = av_find_input_format("v4l2");
   }
 
   if (avformat_open_input(&pTempFormatContext, mFilename.c_str(), pInputFormat, nullptr) != 0)
@@ -175,6 +175,8 @@ void VideoPlayer::ProcessPackets()
   while (mIsRunning && av_read_frame(mpFormatContext.get(), &packet) >= 0)
   {
     DecodePacket(packet);
+
+    av_free_packet(&packet);
   }
 
   mIsRunning = false;
@@ -271,10 +273,9 @@ void VideoPlayer::ConvertFromYuvToRgb(FramePtr& pYuvFrame)
     pRgbFrame->data,
     pRgbFrame->linesize);
 
-  mSignalFrame(vl::Frame(
+  mSignalFrame(std::make_shared<vl::Frame>(
     av_frame_get_best_effort_timestamp(pYuvFrame.get()) * mTimeBase,
     mpCodecContext->width,
     mpCodecContext->height,
     std::move(pBytes)));
 }
-

@@ -18,17 +18,17 @@ int main(int argc, char** argv)
   vl::VideoPlayer videoPlayer(argv[1]);
 
   videoPlayer.GetSignalFrame().Connect(
-    [] (const vl::Frame& frame)
+    [] (const std::shared_ptr<const vl::Frame>& pFrame)
     {
-      std::cout << frame.GetTime() << std::endl;
+      std::cout << pFrame->GetTime() << std::endl;
 
-      const auto& image = frame.GetImage();
+      const auto& pImage = pFrame->GetImage();
 
       cv::Mat displayImage(
-          image.GetHeight(),
-          image.GetWidth(),
+          pImage->GetHeight(),
+          pImage->GetWidth(),
           CV_8UC3,
-          image.GetData().get());
+          pImage->GetData().get());
 
       cv::cvtColor(displayImage, displayImage, CV_BGR2RGB);
 
