@@ -36,6 +36,9 @@ include_directories(.)
 
 set(CMAKE_DEBUG_POSTFIX d)
 
+###############################################################################
+# Libraries
+###############################################################################
 add_library(
   VideoPlayerLib
   VideoLib/Utility/Frame.cpp
@@ -50,28 +53,47 @@ target_link_libraries(
   ${CMAKE_THREAD_LIBS_INIT}
   )
 
+add_library(
+  VideoStreamerLib
+  VideoLib/VideoStreamer/VideoStreamer.cpp
+  )
+
+target_link_libraries(
+  VideoStreamerLib
+  ${FFMPEG_LIBRARIES}
+  ${CMAKE_THREAD_LIBS_INIT}
+  )
+
 ###############################################################################
 # Tests
 ###############################################################################
-if (ENABLE_TESTS)
+#if (ENABLE_TESTS)
 
   find_package(OpenCV REQUIRED)
 
   include_directories(${OpenCV_INCLUDE_DIR})
 
+  #add_executable(
+  #VideoPlayer
+  #Test/VideoPlayer.cpp
+  #)
+  #
+  #target_link_libraries(
+  #VideoPlayer
+  #VideoPlayerLib
+  #${FFMPEG_LIBRARIES}
+  #${OpenCV_LIBRARIES}
+  #)
+
   add_executable(
-    VideoPlayer
-    Test/VideoPlayer.cpp
+    VideoStreamer
+    Test/VideoStreamer.cpp
     )
-
   target_link_libraries(
-    VideoPlayer
-    VideoPlayerLib
-    ${FFMPEG_LIBRARIES}
-    ${OpenCV_LIBRARIES}
+    VideoStreamer
+    VideoStreamerLib
     )
-
-endif()
+#endif()
 
 ###############################################################################
 # Install
