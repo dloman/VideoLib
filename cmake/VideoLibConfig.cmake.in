@@ -10,5 +10,7 @@ SET(VideoLib_INCLUDE_DIRS ${VideoLib_INCLUDE_DIR} )
 
 SET(
   VideoLib_LIBRARIES
+  VideoLibUtility
   VideoPlayerLib
+  VideoStreamerLib
   )

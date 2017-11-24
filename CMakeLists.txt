@@ -36,42 +36,74 @@ include_directories(.)
 
 set(CMAKE_DEBUG_POSTFIX d)
 
+###############################################################################
+# Libraries
+###############################################################################
+
+add_library(
+  VideoLibUtility
+  VideoLib/Utility/Frame.cpp
+  VideoLib/Utility/Packet.cpp
+  )
+
+target_link_libraries(
+  VideoLibUtility
+  ${FFMPEG_LIBRARIES}
+  )
+
 add_library(
   VideoPlayerLib
-  VideoLib/Utility/Frame.cpp
   VideoLib/VideoPlayer/VideoPlayer.cpp
   )
 
 target_link_libraries(
   VideoPlayerLib
+  VideoLibUtility
   Image
-  ${FFMPEG_LIBRARIES}
-  ${FFMPEG_SWSSCALE}
+  ${CMAKE_THREAD_LIBS_INIT}
+  )
+
+add_library(
+  VideoStreamerLib
+  VideoLib/VideoStreamer/VideoStreamer.cpp
+  )
+
+target_link_libraries(
+  VideoStreamerLib
+  VideoLibUtility
   ${CMAKE_THREAD_LIBS_INIT}
   )
 
 ###############################################################################
 # Tests
 ###############################################################################
-if (ENABLE_TESTS)
+#if (ENABLE_TESTS)
 
   find_package(OpenCV REQUIRED)
 
   include_directories(${OpenCV_INCLUDE_DIR})
 
+  #add_executable(
+  #VideoPlayer
+  #Test/VideoPlayer.cpp
+  #)
+  #
+  #target_link_libraries(
+  #VideoPlayer
+  #VideoPlayerLib
+  #${FFMPEG_LIBRARIES}
+  #${OpenCV_LIBRARIES}
+  #)
+
   add_executable(
-    VideoPlayer
-    Test/VideoPlayer.cpp
+    VideoStreamer
+    Test/VideoStreamer.cpp
     )
-
   target_link_libraries(
-    VideoPlayer
-    VideoPlayerLib
-    ${FFMPEG_LIBRARIES}
-    ${OpenCV_LIBRARIES}
+    VideoStreamer
+    VideoStreamerLib
     )
-
-endif()
+#endif()
 
 ###############################################################################
 # Install
@@ -109,7 +141,9 @@ WRITE_BASIC_PACKAGE_VERSION_FILE(
 
 install(
 TARGETS
-VideoPlayerLib
+  VideoLibUtility
+  VideoPlayerLib
+  VideoStreamerLib
 DESTINATION
   ${VideoLib_DIRNAME_lib}
 EXPORT
@@ -141,6 +175,7 @@ install(
 install(
   FILES
     VideoLib/Utility/Frame.hpp
+    VideoLib/Utility/Packet.hpp
   DESTINATION
     ${VideoLib_DIRNAME_include}/VideoLib/Utility
   )
