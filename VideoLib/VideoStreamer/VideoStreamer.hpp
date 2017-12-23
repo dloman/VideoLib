@@ -29,10 +29,6 @@ namespace vl
 
       AVCodecContext* mpCodecContext;
 
-      AVBitStreamFilterContext* mpAnnexB;
-
-      AVOutputFormat* mpOutputFormat;
-
       AVStream* mpStream;
 
       size_t mFrameIndex;

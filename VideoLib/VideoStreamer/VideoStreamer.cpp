@@ -1,5 +1,7 @@
 #include "VideoStreamer.hpp"
 
+#include <VideoLib/Utility/Packet.hpp>
+
 #include <iostream>
 #include <stdexcept>
 
@@ -19,8 +21,6 @@ using vl::VideoStreamer;
 VideoStreamer::VideoStreamer(const std::string& Url, int Width, int Height)
 : mpOutputFormatContext(nullptr),
   mpCodecContext(nullptr),
-  mpAnnexB(nullptr),
-  mpOutputFormat(nullptr),
   mpStream(nullptr),
   mFrameIndex(0u)
 {
@@ -84,11 +84,8 @@ VideoStreamer::VideoStreamer(const std::string& Url, int Width, int Height)
 //-----------------------------------------------------------------------------
 void VideoStreamer::StreamFrame(AVFrame* pFrame)
 {
-  AVPacket Packet;
+  vl::Packet Packet;
 
-  av_init_packet(&Packet);
-  Packet.data = NULL;    // packet data will be allocated by the encoder
-  Packet.size = 0;
   auto ret = avcodec_send_frame(mpCodecContext, pFrame);
 
   if (ret != 0)
@@ -100,7 +97,7 @@ void VideoStreamer::StreamFrame(AVFrame* pFrame)
     std::cerr << Error << "\n";
   }
 
-  ret = avcodec_receive_packet(mpCodecContext, &Packet);
+  ret = avcodec_receive_packet(mpCodecContext, &Packet.Get());
 
   if (ret == AVERROR_EOF || ret == AVERROR(EAGAIN))
   {
@@ -112,13 +109,11 @@ void VideoStreamer::StreamFrame(AVFrame* pFrame)
     return;
   }
 
-  av_packet_rescale_ts(&Packet, mpCodecContext->time_base, mpStream->time_base);
-  av_interleaved_write_frame(mpOutputFormatContext, &Packet);
-  av_packet_unref(&Packet);
+  av_packet_rescale_ts(&Packet.Get(), mpCodecContext->time_base, mpStream->time_base);
+  av_interleaved_write_frame(mpOutputFormatContext, &Packet.Get());
 
-    av_freep(&pFrame->data[0]);
-    av_frame_free(&pFrame);
-
+  av_freep(&pFrame->data[0]);
+  av_frame_free(&pFrame);
 }
 
 //-----------------------------------------------------------------------------
@@ -128,6 +123,3 @@ VideoStreamer::~VideoStreamer()
   avcodec_close(mpCodecContext);
   av_free(mpCodecContext);
 }
-
-
-

@@ -40,16 +40,25 @@ set(CMAKE_DEBUG_POSTFIX d)
 # Libraries
 ###############################################################################
 add_library(
-  VideoPlayerLib
+  VideoLibUtility
   VideoLib/Utility/Frame.cpp
+  VideoLib/Utility/Packet.cpp
+  )
+
+target_link_libraries(
+  VideoLibUtility
+  ${FFMPEG_LIBRARIES}
+  )
+
+add_library(
+  VideoPlayerLib
   VideoLib/VideoPlayer/VideoPlayer.cpp
   )
 
 target_link_libraries(
   VideoPlayerLib
+  VideoLibUtility
   Image
-  ${FFMPEG_LIBRARIES}
-  ${FFMPEG_SWSSCALE}
   ${CMAKE_THREAD_LIBS_INIT}
   )
 
@@ -60,7 +69,7 @@ add_library(
 
 target_link_libraries(
   VideoStreamerLib
-  ${FFMPEG_LIBRARIES}
+  VideoLibUtility
   ${CMAKE_THREAD_LIBS_INIT}
   )
 
@@ -131,7 +140,9 @@ WRITE_BASIC_PACKAGE_VERSION_FILE(
 
 install(
 TARGETS
-VideoPlayerLib
+  VideoLibUtility
+  VideoPlayerLib
+  VideoStreamerLib
 DESTINATION
   ${VideoLib_DIRNAME_lib}
 EXPORT
@@ -163,6 +174,7 @@ install(
 install(
   FILES
     VideoLib/Utility/Frame.hpp
+    VideoLib/Utility/Packet.hpp
   DESTINATION
     ${VideoLib_DIRNAME_include}/VideoLib/Utility
   )
