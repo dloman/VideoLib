@@ -1,6 +1,8 @@
 #include "VideoStreamer.hpp"
 
+#include <VideoLib/Utility/Frame.hpp>
 #include <VideoLib/Utility/Packet.hpp>
+
 
 #include <iostream>
 #include <stdexcept>
@@ -11,10 +13,86 @@ extern "C"
   #include <libavutil/mathematics.h>
   #include <libavutil/time.h>
   #include <libavutil/opt.h>
+  #include <libswscale/swscale.h>
 }
 
 using vl::VideoStreamer;
 
+using AVFramePtr = std::unique_ptr<AVFrame, void(*)(AVFrame*)>;
+
+namespace
+{
+  //----------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
+  vl::Frame ConvertFromRgbToYuv(const vl::Frame& Frame)
+  {
+    const auto& pImage = Frame.GetImage();
+
+    //get a context to switch to yuv
+    std::unique_ptr<SwsContext, void(*)(SwsContext*)> pSws(
+      sws_getContext(
+        pImage->GetWidth(),
+        pImage->GetHeight(),
+        AV_PIX_FMT_RGB24,
+        pImage->GetWidth(),
+        pImage->GetHeight(),
+        AV_PIX_FMT_YUV420P,
+        SWS_BILINEAR,
+        nullptr,
+        nullptr,
+        nullptr),
+      [] (auto pSwsContext) { sws_freeContext(pSwsContext);});
+
+    if (!pSws)
+    {
+      throw std::runtime_error("unable to get swsContext");
+    }
+
+    AVFramePtr pRgbFrame(
+      av_frame_alloc(),
+      [] (auto pFrame) { av_frame_free(&pFrame); });
+
+    avpicture_fill(
+      reinterpret_cast<AVPicture*>(pRgbFrame.get()),
+      reinterpret_cast<std::uint8_t*>(pImage->GetData().get()),
+      AV_PIX_FMT_RGB24,
+      pImage->GetWidth(),
+      pImage->GetHeight());
+
+    auto byteCount = avpicture_get_size(
+      AV_PIX_FMT_YUV420P,
+      pImage->GetWidth(),
+      pImage->GetHeight());
+
+    std::unique_ptr<std::byte[]> pBytes = std::make_unique<std::byte[]>(byteCount);
+
+    AVFramePtr pYuvFrame(
+      av_frame_alloc(),
+      [] (auto pFrame) { av_frame_free(&pFrame); });
+
+    avpicture_fill(
+      reinterpret_cast<AVPicture*>(pYuvFrame.get()),
+      reinterpret_cast<std::uint8_t*>(pBytes.get()),
+      AV_PIX_FMT_YUV420P,
+      pImage->GetWidth(),
+      pImage->GetHeight());
+
+    sws_scale(
+      pSws.get(),
+      pRgbFrame->data,
+      pRgbFrame->linesize,
+      0,
+      pImage->GetHeight(),
+      pYuvFrame->data,
+      pYuvFrame->linesize);
+
+    return vl::Frame(
+      Frame.GetTime(),
+      pImage->GetWidth(),
+      pImage->GetHeight(),
+      std::move(pBytes));
+  }
+}
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
@@ -78,6 +156,31 @@ VideoStreamer::VideoStreamer(const std::string& Url, int Width, int Height)
   auto fsdp = fopen("test.sdp", "w");
   fprintf(fsdp, "%s", buf);
   fclose(fsdp);
+}
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+void VideoStreamer::StreamFrame(const vl::Frame& Frame)
+{
+  auto pImage = Frame.GetImage();
+
+  if (pImage->GetColorSpace() == dl::image::ColorSpace::eRGB)
+  {
+    pImage = ConvertFromRgbToYuv(Frame).GetImage();
+  }
+
+  AVFramePtr pYuvFrame(
+    av_frame_alloc(),
+    [] (auto pFrame) { av_frame_free(&pFrame); });
+
+  avpicture_fill(
+    reinterpret_cast<AVPicture*>(pYuvFrame.get()),
+    reinterpret_cast<std::uint8_t*>(pImage->GetData().get()),
+    AV_PIX_FMT_RGB24,
+    pImage->GetWidth(),
+    pImage->GetHeight());
+
+  StreamFrame(pYuvFrame.get());
 }
 
 //-----------------------------------------------------------------------------

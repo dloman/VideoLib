@@ -11,6 +11,8 @@ class AVStream;
 
 namespace vl
 {
+  class Frame;
+
   class VideoStreamer
   {
     public:
@@ -18,6 +20,8 @@ namespace vl
       VideoStreamer(const std::string& Url, int Width, int Height);
 
       ~VideoStreamer();
+
+      void StreamFrame(const vl::Frame& image);
 
       void StreamFrame(AVFrame* pFrame);
 

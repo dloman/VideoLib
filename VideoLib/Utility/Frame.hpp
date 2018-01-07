@@ -16,7 +16,7 @@ namespace vl
         const int height,
         std::unique_ptr<std::byte[]>&& pData);
 
-      const double GetTime() const;
+      double GetTime() const;
 
       const std::shared_ptr<const dl::image::Image>& GetImage() const;
 
@@ -30,7 +30,7 @@ namespace vl
   //----------------------------------------------------------------------------
   //----------------------------------------------------------------------------
   inline
-  const double Frame::GetTime() const
+  double Frame::GetTime() const
   {
     return mTime;
   }

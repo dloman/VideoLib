@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.0)
 
 set(CMAKE_C_COMPILER /usr/local/bin/gcc)
 set(CMAKE_CXX_COMPILER /usr/local/bin/g++)
+
 set(MODULE_NAME VideoLib)
 add_definitions(-DMODULE_NAME=\"VideoLib\")
 
@@ -70,6 +71,7 @@ add_library(
 target_link_libraries(
   VideoStreamerLib
   VideoLibUtility
+  Image
   ${CMAKE_THREAD_LIBS_INIT}
   )
 
@@ -82,21 +84,21 @@ target_link_libraries(
 
   include_directories(${OpenCV_INCLUDE_DIR})
 
-  #add_executable(
-  #VideoPlayer
-  #Test/VideoPlayer.cpp
-  #)
-  #
-  #target_link_libraries(
-  #VideoPlayer
-  #VideoPlayerLib
-  #${FFMPEG_LIBRARIES}
-  #${OpenCV_LIBRARIES}
-  #)
+  add_executable(
+    VideoPlayer
+    Test/VideoPlayerTest.cpp
+  )
+
+  target_link_libraries(
+    VideoPlayer
+    VideoPlayerLib
+    ${FFMPEG_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+  )
 
   add_executable(
     VideoStreamer
-    Test/VideoStreamer.cpp
+    Test/VideoStreamerTest.cpp
     )
   target_link_libraries(
     VideoStreamer
