@@ -126,18 +126,27 @@ int main(int argc, char** argv)
   }
   else
   {
-    int Width = 720, Height = 480;
-
-    vl::VideoStreamer VideoStreamer("rtp://127.0.0.1:9990", Width, Height);
+    std::unique_ptr<vl::VideoStreamer> pVideoStreamer(nullptr);
 
     vl::VideoPlayer videoPlayer(argv[1]);
 
     videoPlayer.GetSignalFrame().Connect(
-      [&VideoStreamer, &FrameNumber] (const std::shared_ptr<const vl::Frame>& pFrame)
+      [&pVideoStreamer, &FrameNumber] (const std::shared_ptr<const vl::Frame>& pFrame)
       {
-        VideoStreamer.StreamFrame(*pFrame);
+        if (!pVideoStreamer)
+        {
+          pVideoStreamer = std::make_unique<vl::VideoStreamer>(
+            "rtp://127.0.0.1:9990",
+            pFrame->GetWidth(),
+            pFrame->GetHeight());
+        }
 
-        std::cout << "Write frame " << FrameNumber  << " time = " << pFrame->GetTime()<< std::endl;
+        pVideoStreamer->StreamFrame(*pFrame);
+
+        std::cout
+          << "Write frame " << FrameNumber  << " time = "
+          << pFrame->GetTime() << " " << pFrame->GetWidth()
+          << "x" << pFrame->GetHeight() << std::endl;
 
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
 

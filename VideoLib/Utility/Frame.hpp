@@ -20,6 +20,10 @@ namespace vl
 
       std::shared_ptr<const dl::image::Image> GetImage() const;
 
+      size_t GetWidth() const;
+
+      size_t GetHeight() const;
+
     private:
 
       double mTime;
@@ -41,5 +45,21 @@ namespace vl
   std::shared_ptr<const dl::image::Image> Frame::GetImage() const
   {
     return mpImage;
+  }
+
+  //----------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
+  inline
+  size_t Frame::GetWidth() const
+  {
+    return mpImage->GetWidth();
+  }
+
+  //----------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
+  inline
+  size_t Frame::GetHeight() const
+  {
+    return mpImage->GetHeight();
   }
 }
