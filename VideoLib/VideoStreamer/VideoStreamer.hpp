@@ -1,5 +1,7 @@
 #pragma once
 
+#include <experimental/memory>
+#include <memory>
 #include <string>
 
 class AVBitStreamFilterContext;
@@ -23,7 +25,7 @@ namespace vl
 
       void StreamFrame(const vl::Frame& image);
 
-      void StreamFrame(AVFrame* pFrame);
+      void StreamFrame(std::experimental::observer_ptr<AVFrame> pFrame);
 
     private:
 

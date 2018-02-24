@@ -28,7 +28,7 @@ int main(int argc, char** argv)
           pImage->GetHeight(),
           pImage->GetWidth(),
           CV_8UC3,
-          pImage->GetData().get());
+          const_cast<std::byte*>(pImage->GetData().get()));
 
       cv::cvtColor(displayImage, displayImage, CV_BGR2RGB);
 
@@ -43,8 +43,6 @@ int main(int argc, char** argv)
       std::cerr << error << "\n";
       exit(1);
     });
-
-  videoPlayer.GetSignalError().Connect([](auto t) { exit(0); });
 
   using namespace std::literals;
 

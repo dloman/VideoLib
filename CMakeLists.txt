@@ -3,6 +3,9 @@ cmake_minimum_required(VERSION 3.0)
 set(CMAKE_C_COMPILER /usr/local/bin/gcc)
 set(CMAKE_CXX_COMPILER /usr/local/bin/g++)
 
+#fixes wierd library shortname isssue
+CMAKE_POLICY( SET CMP0060 NEW )
+
 set(MODULE_NAME VideoLib)
 add_definitions(-DMODULE_NAME=\"VideoLib\")
 
@@ -25,7 +28,7 @@ find_package(Threads)
 
 find_package(FFmpeg REQUIRED)
 
-include_directories(${FFMPEG_INCLUDE_DIR})
+include_directories(${FFMPEG_INCLUDE_DIRS})
 
 find_package(DanLib REQUIRED HINTS ${DanLib_DIR})
 include_directories(${DanLib_INCLUDE_DIR})
@@ -78,7 +81,7 @@ target_link_libraries(
 ###############################################################################
 # Tests
 ###############################################################################
-#if (ENABLE_TESTS)
+if (ENABLE_TESTS)
 
   find_package(OpenCV REQUIRED)
 
@@ -92,7 +95,6 @@ target_link_libraries(
   target_link_libraries(
     VideoPlayer
     VideoPlayerLib
-    ${FFMPEG_LIBRARIES}
     ${OpenCV_LIBRARIES}
   )
 
@@ -100,11 +102,14 @@ target_link_libraries(
     VideoStreamer
     Test/VideoStreamerTest.cpp
     )
+
   target_link_libraries(
     VideoStreamer
+    VideoPlayerLib
     VideoStreamerLib
     )
-#endif()
+
+endif()
 
 ###############################################################################
 # Install

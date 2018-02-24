@@ -2,11 +2,13 @@
 
 extern "C"
 {
-#include <libavcodec/avcodec.h>
-#include <libavdevice/avdevice.h>
-#include <libavformat/avformat.h>
-#include <libavutil/error.h>
-#include <libswscale/swscale.h>
+  #include <libavcodec/avcodec.h>
+  #include <libavdevice/avdevice.h>
+  #include <libavformat/avformat.h>
+  #include <libavutil/error.h>
+  #include <libavutil/imgutils.h>
+  #include <libswscale/swscale.h>
+#include <libavutil/timestamp.h>
 }
 
 #include <experimental/memory>
@@ -34,7 +36,8 @@ VideoPlayer::VideoPlayer(const std::string& filename)
     mpCodecContext(nullptr, [] (auto pCodecContext) {}),
     mpThread(std::make_unique<std::thread>([this] { Start(); })),
     mFilename(filename),
-    mTimeBase(0.0)
+    mTimeBase(0.0),
+    mVideoStreamIndex(0)
 {
 }
 
@@ -106,26 +109,24 @@ void VideoPlayer::OpenCodecContext()
 
   AVStream* pStream(nullptr);
 
-  int videoStreamIndex = av_find_best_stream(
+  mVideoStreamIndex = av_find_best_stream(
     mpFormatContext.get(),
     AVMEDIA_TYPE_VIDEO,
     -1,
     -1,
-    nullptr,
+    &pCodec,
     0);
 
-  if (videoStreamIndex < 0)
+  if (mVideoStreamIndex < 0)
   {
     mSignalError("could not find best stream");
 
     return;
   }
 
-  pStream = mpFormatContext->streams[videoStreamIndex];
+  pStream = mpFormatContext->streams[mVideoStreamIndex];
 
   mTimeBase = GetTimeBase(*pStream);
-
-  pCodec = avcodec_find_decoder(pStream->codecpar->codec_id);
 
   if (!pCodec)
   {
@@ -158,8 +159,6 @@ void VideoPlayer::OpenCodecContext()
 
     return;
   }
-
-  ProcessPackets();
 }
 
 //------------------------------------------------------------------------------
@@ -168,15 +167,14 @@ void VideoPlayer::ProcessPackets()
 {
   AVPacket packet;
 
-  av_init_packet(&packet);
-  packet.data = nullptr;
-  packet.size = 0;
-
   while (mIsRunning && av_read_frame(mpFormatContext.get(), &packet) >= 0)
   {
-    DecodePacket(packet);
+    if (mVideoStreamIndex == packet.stream_index)
+    {
+      DecodePacket(packet);
+    }
 
-    av_free_packet(&packet);
+    av_packet_unref(&packet);
   }
 
   mIsRunning = false;
@@ -188,7 +186,14 @@ void VideoPlayer::ProcessPackets()
 //------------------------------------------------------------------------------
 void VideoPlayer::DecodePacket(const AVPacket& packet)
 {
-  int frameAquired = 0;
+  auto returnCode = avcodec_send_packet(mpCodecContext.get(), &packet);
+
+  if (returnCode < 0)
+  {
+    std::array<char, 2056> error;
+    av_make_error_string(error.data(), 2056, returnCode);
+    mSignalError(std::string("decode error ") + error.data());
+  }
 
   FramePtr pYuvFrame(
     av_frame_alloc(),
@@ -201,25 +206,23 @@ void VideoPlayer::DecodePacket(const AVPacket& packet)
     return;
   }
 
-  auto returnCode =
-    avcodec_decode_video2(mpCodecContext.get(), pYuvFrame.get(), &frameAquired, &packet);
+  returnCode = avcodec_receive_frame(mpCodecContext.get(), pYuvFrame.get());
 
-  if (returnCode < 0)
+  if (returnCode == AVERROR(EAGAIN) || returnCode == AVERROR_EOF)
   {
-    std::array<char, 2056> error;
-    av_make_error_string(error.data(), 2056, returnCode);
-    mSignalError(std::string("decode error ") + error.data());
+    return;
+  }
+  else if (returnCode < 0)
+  {
+    mSignalError("Error while decoding");
   }
 
-  if (frameAquired)
+  if (packet.dts == AV_NOPTS_VALUE)
   {
-    if (packet.dts == AV_NOPTS_VALUE)
-    {
-      mSignalError("invaild time");
-    }
+    mSignalError("invaild time");
+  }
 
   ConvertFromYuvToRgb(pYuvFrame);
-  }
 }
 
 //------------------------------------------------------------------------------
@@ -246,10 +249,11 @@ void VideoPlayer::ConvertFromYuvToRgb(FramePtr& pYuvFrame)
     mSignalError("unable to get swsContext");
   }
 
-  auto byteCount = avpicture_get_size(
+  auto byteCount = av_image_get_buffer_size(
     AV_PIX_FMT_RGB24,
-    mpCodecContext->width,
-    mpCodecContext->height);
+    pYuvFrame->width,
+    pYuvFrame->height,
+    1);
 
   std::unique_ptr<std::byte[]> pBytes = std::make_unique<std::byte[]>(byteCount);
 

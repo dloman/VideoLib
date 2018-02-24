@@ -54,7 +54,7 @@ namespace
 
     avpicture_fill(
       reinterpret_cast<AVPicture*>(pRgbFrame.get()),
-      reinterpret_cast<std::uint8_t*>(pImage->GetData().get()),
+      reinterpret_cast<const std::uint8_t*>(pImage->GetData().get()),
       AV_PIX_FMT_RGB24,
       pImage->GetWidth(),
       pImage->GetHeight());
@@ -162,34 +162,44 @@ VideoStreamer::VideoStreamer(const std::string& Url, int Width, int Height)
 //-----------------------------------------------------------------------------
 void VideoStreamer::StreamFrame(const vl::Frame& Frame)
 {
-  auto pImage = Frame.GetImage();
+  //if (pImage->GetColorSpace() == dl::image::ColorSpace::eRGB)
+  //{
+  auto NewFrame = ConvertFromRgbToYuv(Frame);
 
-  if (pImage->GetColorSpace() == dl::image::ColorSpace::eRGB)
-  {
-    pImage = ConvertFromRgbToYuv(Frame).GetImage();
-  }
+  auto pImage = NewFrame.GetImage();
 
   AVFramePtr pYuvFrame(
     av_frame_alloc(),
-    [] (auto pFrame) { av_frame_free(&pFrame); });
+    [] (auto pFrame)
+    {
+      av_frame_free(&pFrame);
+    });
 
   avpicture_fill(
     reinterpret_cast<AVPicture*>(pYuvFrame.get()),
-    reinterpret_cast<std::uint8_t*>(pImage->GetData().get()),
-    AV_PIX_FMT_RGB24,
+    reinterpret_cast<const std::uint8_t*>(pImage->GetData().get()),
+    AV_PIX_FMT_YUV420P,
     pImage->GetWidth(),
     pImage->GetHeight());
 
-  StreamFrame(pYuvFrame.get());
+  pYuvFrame->pts = Frame.GetTime();
+
+  pYuvFrame->format = AV_PIX_FMT_YUV420P;
+
+  pYuvFrame->width = pImage->GetWidth();
+
+  pYuvFrame->height = pImage->GetHeight();
+
+  StreamFrame(std::experimental::make_observer<AVFrame>(pYuvFrame.get()));
 }
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-void VideoStreamer::StreamFrame(AVFrame* pFrame)
+void VideoStreamer::StreamFrame(std::experimental::observer_ptr<AVFrame> pFrame)
 {
   vl::Packet Packet;
 
-  auto ret = avcodec_send_frame(mpCodecContext, pFrame);
+  auto ret = avcodec_send_frame(mpCodecContext, pFrame.get());
 
   if (ret != 0)
   {
@@ -212,11 +222,11 @@ void VideoStreamer::StreamFrame(AVFrame* pFrame)
     return;
   }
 
-  av_packet_rescale_ts(&Packet.Get(), mpCodecContext->time_base, mpStream->time_base);
-  av_interleaved_write_frame(mpOutputFormatContext, &Packet.Get());
+  Packet.Get().pts = 3003 * mFrameIndex;
 
-  av_freep(&pFrame->data[0]);
-  av_frame_free(&pFrame);
+  mFrameIndex++;
+
+  av_interleaved_write_frame(mpOutputFormatContext, &Packet.Get());
 }
 
 //-----------------------------------------------------------------------------

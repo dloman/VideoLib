@@ -80,6 +80,8 @@ namespace vl
       EndSignal mSignalVideoOver;
 
       double mTimeBase;
+
+      int mVideoStreamIndex;
   };
 
 
